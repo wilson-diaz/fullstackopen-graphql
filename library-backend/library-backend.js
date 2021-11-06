@@ -1,5 +1,4 @@
-const { ApolloServer, gql } = require('apollo-server')
-const { v1: uuid } = require('uuid')
+const { ApolloServer, gql, UserInputError } = require('apollo-server')
 require('dotenv').config()
 
 const mongoose = require('mongoose')
@@ -72,26 +71,49 @@ const resolvers = {
       return Book.collection.count({ author: root._id }) // _id to match database format
     }
   },
+  Book: {
+    author: async (root) => {
+      return await Author.findOne({ _id: root.author})
+    }
+  },
   Mutation: {
-    addBook: (root, args) => {
-      const newBook = { ...args, id: uuid() }
-      books = books.concat(newBook)
+    addBook: async (root, args) => {
+      // create author if new
+      let author = await Author.findOne({ name: args.author })
+      if (!author) {
+        author = new Author({ name: args.author})
+        await author.save()
+      }
 
-      if (!authors.some(a => a.name === args.author)) {
-        authors = authors.concat({ name: args.author, id: uuid()})
+      const newBook = new Book({ ...args, author: author._id })
+
+      try {
+        await newBook.save()
+      } catch (error) {
+        throw new UserInputError(error.message, {
+          invalidArgs: args
+        })
       }
 
       return newBook
     },
-    editAuthor: (root, args) => {
-      const author = authors.find(a => a.name === args.name)
+    editAuthor: async (root, args) => {
+      const author = await Author.findOne({ name: args.name })
       if (!author){
         return null
       }
 
-      const updatedAuthor = { ...author, born: args.setBornTo }
-      authors = authors.map(a => a.name === args.name ? updatedAuthor : a)
-      return updatedAuthor
+      author.born = args.setBornTo
+      console.log(author)
+      try {
+        await author.save()
+      } catch (error) {
+        throw new UserInputError(error.message, {
+          invalidArgs: args
+        })
+      }
+
+      return author 
     }
   }
 }
