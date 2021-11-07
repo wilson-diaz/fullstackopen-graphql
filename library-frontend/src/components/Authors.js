@@ -4,7 +4,11 @@ import { ALL_AUTHORS, EDIT_BORN } from '../queries'
 
 const Authors = (props) => {
   const result = useQuery(ALL_AUTHORS)
-  const [ changeBorn ] = useMutation(EDIT_BORN)
+  const [ changeBorn ] = useMutation(EDIT_BORN, {
+    onError: (error) => {
+      console.log(error)
+    }
+  })
 
   const [ bornValue, setBornValue ] = useState('')
   const [ selectedAuthor, setSelectedAuthor ] = useState('')
