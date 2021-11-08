@@ -1,6 +1,6 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useMutation } from '@apollo/client'
-import { ALL_AUTHORS, ALL_BOOKS, CREATE_BOOK } from '../queries'
+import { ALL_AUTHORS, ALL_BOOKS, BOOKS_BY_GENRE, CREATE_BOOK } from '../queries'
 
 const NewBook = (props) => {
   const [title, setTitle] = useState('')
@@ -8,6 +8,7 @@ const NewBook = (props) => {
   const [published, setPublished] = useState('')
   const [genre, setGenre] = useState('')
   const [genres, setGenres] = useState([])
+  const [favoriteGenre, setFavoriteGenre] = useState('')
 
   const [ createBook ] = useMutation(CREATE_BOOK, {
     refetchQueries: [ { query: ALL_BOOKS }, { query: ALL_AUTHORS } ],
@@ -16,6 +17,13 @@ const NewBook = (props) => {
     }
   })
 
+  useEffect(() => {
+    if (props.resultCurrentUser.data && props.resultCurrentUser.data.me) {
+      setFavoriteGenre(props.resultCurrentUser.data.me.favoriteGenre)
+    }
+  }, [props.resultCurrentUser.data]) // eslint-disable-line
+
+
   if (!props.show) {
     return null
   }
@@ -23,7 +31,22 @@ const NewBook = (props) => {
   const submit = async (event) => {
     event.preventDefault()
     
-    createBook({ variables: { title, author, published: Number(published), genres } })
+    createBook({
+      variables: { title, author, published: Number(published), genres },
+      update: (cache, response) => { // update user's favorites
+        if (favoriteGenre !== '' && response.data.addBook.genres.includes(favoriteGenre)) {
+          const dataInCache = cache.readQuery({ query: BOOKS_BY_GENRE, variables: { genre: favoriteGenre }})
+          cache.writeQuery({
+            query: BOOKS_BY_GENRE,
+            variables: { genre: favoriteGenre },
+            data: {
+              ...dataInCache,
+              allBooks: [...dataInCache.allBooks, response.data.addBook]
+            }
+          })
+        }
+      }
+    })
       .catch(error => console.log(error))
 
     setTitle('')
