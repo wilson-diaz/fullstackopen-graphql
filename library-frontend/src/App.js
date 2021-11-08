@@ -1,14 +1,21 @@
 import React, { useState } from 'react'
-import { useApolloClient } from '@apollo/client'
+import { useApolloClient, useLazyQuery } from '@apollo/client'
+import { CURRENT_USER } from './queries'
 
 import Authors from './components/Authors'
 import Books from './components/Books'
 import NewBook from './components/NewBook'
 import LoginForm from './components/LoginForm'
+import Recommended from './components/Recommended'
 
 const App = () => {
   const [page, setPage] = useState('authors')
   const [token, setToken] = useState(null)
+
+  const [getCurrentUser, resultCurrentUser] = useLazyQuery(CURRENT_USER, {
+    fetchPolicy: 'no-cache'
+  })
+
   const client = useApolloClient()
 
   const handleLogout = () => {
@@ -25,6 +32,7 @@ const App = () => {
         { 
           token
             ? <><button onClick={() => setPage('add')}>add book</button>
+              <button onClick={() => setPage('recommended')}>recommended</button>
               <button onClick={handleLogout}>logout</button></>
             : <button onClick={() => setPage('login')}>login</button>
         }
@@ -42,9 +50,16 @@ const App = () => {
         show={page === 'add'}
       />
 
+      <Recommended
+        show={page === 'recommended'}
+        token={token}
+        resultCurrentUser={resultCurrentUser}
+      />
+
       <LoginForm
         show={page === 'login'}
         setToken={setToken}
+        getCurrentUser={getCurrentUser}
       />
 
     </div>
