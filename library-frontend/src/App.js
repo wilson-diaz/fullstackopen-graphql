@@ -48,6 +48,7 @@ const App = () => {
 
       <NewBook
         show={page === 'add'}
+        resultCurrentUser={resultCurrentUser}
       />
 
       <Recommended
