@@ -83,7 +83,7 @@ const resolvers = {
     bookCount: () => Book.collection.countDocuments(),
     authorCount: () => Author.collection.countDocuments(),
     allBooks: async (root, args) => {
-      const books = await Book.find({})
+      const books = await Book.find({}).populate('author')
 
       const filteredAuth = !args.author 
         ? books
@@ -93,17 +93,12 @@ const resolvers = {
         ? filteredAuth
         : filteredAuth.filter(b => b.genres.some(val => val === args.genre))
     },
-    allAuthors: async () => await Author.find({}),
+    allAuthors: async () => await Author.find({}).populate('books', '_id'),
     me: (root, args, { currentUser }) => currentUser // from context
   },
   Author: {
     bookCount: (root) => {
-      return Book.collection.count({ author: root._id }) // _id to match database format
-    }
-  },
-  Book: {
-    author: async (root) => {
-      return await Author.findOne({ _id: root.author})
+      return root.books.length
     }
   },
   Mutation: {
@@ -145,7 +140,6 @@ const resolvers = {
       }
 
       author.born = args.setBornTo
-      console.log(author)
       try {
         await author.save()
       } catch (error) {
