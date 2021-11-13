@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
-import { useApolloClient, useLazyQuery } from '@apollo/client'
-import { CURRENT_USER } from './queries'
+import { useApolloClient, useLazyQuery, useSubscription } from '@apollo/client'
+import { BOOK_ADDED, CURRENT_USER } from './queries'
 
 import Authors from './components/Authors'
 import Books from './components/Books'
@@ -17,6 +17,12 @@ const App = () => {
   })
 
   const client = useApolloClient()
+
+  useSubscription(BOOK_ADDED, {
+    onSubscriptionData: ({ subscriptionData }) => {
+      alert(`New book added: "${subscriptionData.data.bookAdded.title}"`)
+    }
+  })
 
   const handleLogout = () => {
     setToken(null)
